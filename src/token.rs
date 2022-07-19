@@ -9,5 +9,6 @@ pub enum Token {
     EOF,
     ILLEGAL,
     INT(isize),
+    FLOAT(f64),
     STRING(String),
 }

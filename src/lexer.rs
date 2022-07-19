@@ -36,12 +36,12 @@ impl Lexer {
                 '0'..='9' => self.read_as_number(),
                 _ => Token::PLUS,
             },
-            '"' => self.read_as_string(),
             '-' => match self.peek() {
                 '0'..='9' => self.read_as_number(),
                 _ => Token::MINUS,
             },
             '0'..='9' => self.read_as_number(),
+            '"' => self.read_as_string(),
             '\0' => Token::EOF,
             _ => Token::ILLEGAL,
         };
@@ -70,7 +70,7 @@ impl Lexer {
         loop {
             chars.push(self.ch);
             match self.peek() {
-                '0'..='9' => {
+                '0'..='9' | '.' => {
                     self.read();
                 }
                 _ => {
@@ -80,7 +80,11 @@ impl Lexer {
         }
 
         let s: String = chars.iter().collect();
-        Token::INT(s.parse::<isize>().unwrap())
+        if s.contains(".") {
+            Token::FLOAT(s.parse::<f64>().unwrap())
+        } else {
+            Token::INT(s.parse::<isize>().unwrap())
+        }
     }
 
     fn read(&mut self) {
@@ -111,6 +115,19 @@ mod test {
     fn read_string() {
         let mut lexer = Lexer::new(String::from(r#""hello""#));
         assert_eq!(lexer.next_token(), Token::STRING(String::from("hello")));
+    }
+
+    #[test]
+    fn read_number() {
+        let tests = vec![
+            ("1", Token::INT(1)),
+            ("1.5", Token::FLOAT(1.5)),
+            ("2.345", Token::FLOAT(2.345)),
+        ];
+        for test in tests {
+            let mut lexer = Lexer::new(test.0.to_string());
+            assert_eq!(lexer.next_token(), test.1);
+        }
     }
 
     #[test]

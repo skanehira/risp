@@ -62,6 +62,22 @@ mod tests {
     }
 
     #[test]
+    fn eval_float() {
+        let tests = vec![("1.5", "1.5"), ("10.5", "10.5")];
+        for test in tests {
+            assert(test.0, test.1);
+        }
+    }
+
+    #[test]
+    fn eval_int_float() {
+        let tests = vec![("(+ 1.5 10)", "11.5"), ("(- 10.5 0.5)", "10")];
+        for test in tests {
+            assert(test.0, test.1);
+        }
+    }
+
+    #[test]
     fn eval_string() {
         let tests = vec![
             ("\"hello world\"", "hello world"),

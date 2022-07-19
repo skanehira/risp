@@ -31,7 +31,14 @@ impl Parser {
     // Cons("hello", None)
     fn inner_parse(&mut self) -> Option<Box<Cell>> {
         match self.lexer.next_token() {
-            Token::INT(i) => Some(Box::new(Cell::Cons(Atom::Int(i), self.inner_parse()))),
+            Token::INT(i) => Some(Box::new(Cell::Cons(
+                Atom::Number(Number::Int(i)),
+                self.inner_parse(),
+            ))),
+            Token::FLOAT(f) => Some(Box::new(Cell::Cons(
+                Atom::Number(Number::Float(f)),
+                self.inner_parse(),
+            ))),
             Token::STRING(s) => Some(Box::new(Cell::Cons(Atom::String(s), None))),
             Token::LPAREN => {
                 let sym = match self.lexer.next_token() {
@@ -60,6 +67,12 @@ mod test {
         let mut p = Parser::new(lexer);
         let cells = p.parse();
         cells
+    }
+
+    #[test]
+    fn symbol_float() {
+        let cell = parse(String::from("1.5"));
+        assert_eq!(cell[0].to_string(), "1.5");
     }
 
     #[test]
