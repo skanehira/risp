@@ -36,9 +36,26 @@ fn repl<R: BufRead>(reader: R) -> Result<()> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_eval() {
+    fn assert(input: &str, want: &str) {
         let evaluator = eval::Evaluator::new();
+        let l = lexer::Lexer::new(input.to_string());
+        let mut p = parser::Parser::new(l);
+        let cells = p.parse();
+        let cell = cells.into_iter().next().unwrap();
+        let got = evaluator.eval(Box::new(cell));
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn eval_int() {
+        let tests = vec![("1", "1"), ("10", "10"), ("-10", "-10")];
+        for test in tests {
+            assert(test.0, test.1);
+        }
+    }
+
+    #[test]
+    fn eval_calc() {
         let tests = vec![
             ("(+ 1 (- 10 (* 10 50)))", "-489"),
             ("(+ -10 5)", "-5"),
@@ -49,13 +66,7 @@ mod tests {
             ("(+ 1 2 (* 1 3))", "6"),
         ];
         for test in tests {
-            let l = lexer::Lexer::new(test.0.to_string());
-            let mut p = parser::Parser::new(l);
-            let cells = p.parse();
-            let cell = cells.into_iter().next().unwrap();
-            let got = evaluator.eval(Box::new(cell));
-            let want = test.1;
-            assert_eq!(got, want)
+            assert(test.0, test.1);
         }
     }
 }
