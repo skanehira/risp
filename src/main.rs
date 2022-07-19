@@ -62,6 +62,19 @@ mod tests {
     }
 
     #[test]
+    fn eval_string() {
+        let tests = vec![
+            ("\"hello world\"", "hello world"),
+            ("\"hello1234\"", "hello1234"),
+            ("\"123\"", "123"),
+        ];
+
+        for test in tests {
+            assert(test.0, test.1);
+        }
+    }
+
+    #[test]
     fn eval_calc() {
         let tests = vec![
             ("(+ 1 (- 10 (* 10 50)))", "-489"),
