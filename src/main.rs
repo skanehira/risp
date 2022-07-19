@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::io::{stdin, BufRead};
+use std::io::{stdin, BufRead, Write};
 
 mod ast;
 mod eval;
@@ -15,8 +15,14 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn prompt() {
+    print!(">");
+    _ = std::io::stdout().flush();
+}
+
 fn repl<R: BufRead>(reader: R) -> Result<()> {
     let evaluator = eval::Evaluator::new();
+    prompt();
     for line in reader.lines() {
         let line = line?;
         if line == "" {
@@ -27,6 +33,7 @@ fn repl<R: BufRead>(reader: R) -> Result<()> {
         for expr in p.parse() {
             let result = evaluator.eval(Box::new(expr));
             println!("{}", result);
+            prompt();
         }
     }
     Ok(())
