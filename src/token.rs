@@ -8,5 +8,6 @@ pub enum Token {
     RPAREN,
     EOF,
     ILLEGAL,
-    Int(isize),
+    INT(isize),
+    STRING(String),
 }

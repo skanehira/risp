@@ -1,11 +1,4 @@
-use super::ast::{
-    Atom,
-    Atom::{Int, Sym},
-    Cell,
-    Cell::Cons,
-    Symbol,
-    Symbol::*,
-};
+use super::ast::{Atom, Cell, Cell::Cons, Symbol, Symbol::*};
 
 pub struct Evaluator {}
 
@@ -17,12 +10,13 @@ impl Evaluator {
     pub fn eval(&self, cell: Box<Cell>) -> String {
         match *cell {
             Cons(value, list) => match value {
-                Sym(op) => match op {
+                Atom::Sym(op) => match op {
                     Add | Sub | Mul | Div => {
                         Atom::Int(self.op_calc(&op, list).unwrap()).to_string()
                     }
                 },
-                _ => unreachable!(),
+                Atom::Int(i) => i.to_string(),
+                Atom::String(s) => s,
             },
         }
     }
@@ -31,7 +25,7 @@ impl Evaluator {
         match list {
             Some(list) => match *list {
                 Cons(value, list) => match value {
-                    Int(v) => match list {
+                    Atom::Int(v) => match list {
                         Some(list) => {
                             let vv = self.op_calc(op, Some(list)).unwrap();
                             let result = match op {
@@ -44,7 +38,8 @@ impl Evaluator {
                         }
                         None => Some(v),
                     },
-                    Sym(op) => self.op_calc(&op, list),
+                    Atom::Sym(op) => self.op_calc(&op, list),
+                    _ => unreachable!(),
                 },
             },
             None => None,

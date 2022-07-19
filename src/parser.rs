@@ -28,10 +28,11 @@ impl Parser {
 
     // Cons(+, Cons(1, Cons(2, None)))
     // Cons(1, None)
-    // Cons("hello")
+    // Cons("hello", None)
     fn inner_parse(&mut self) -> Option<Box<Cell>> {
         match self.lexer.next_token() {
-            Token::Int(i) => Some(Box::new(Cell::Cons(Atom::Int(i), self.inner_parse()))),
+            Token::INT(i) => Some(Box::new(Cell::Cons(Atom::Int(i), self.inner_parse()))),
+            Token::STRING(s) => Some(Box::new(Cell::Cons(Atom::String(s), None))),
             Token::LPAREN => {
                 let sym = match self.lexer.next_token() {
                     Token::PLUS => Symbol::Add,
@@ -54,27 +55,34 @@ impl Parser {
 mod test {
     use super::*;
 
-    #[test]
-    fn symbol_expression() {
-        let lexer = Lexer::new(String::from("1"));
+    fn parse(input: String) -> Vec<Cell> {
+        let lexer = Lexer::new(input);
         let mut p = Parser::new(lexer);
-        let got = p.parse();
-        assert_eq!(got[0].to_string(), "1");
+        let cells = p.parse();
+        cells
+    }
+
+    #[test]
+    fn symbol_int() {
+        let cell = parse(String::from("1"));
+        assert_eq!(cell[0].to_string(), "1");
+    }
+
+    #[test]
+    fn symbol_string() {
+        let cell = parse(String::from("\"hello world\""));
+        assert_eq!(cell[0].to_string(), "hello world");
     }
 
     #[test]
     fn list_expression() {
-        let lexer = Lexer::new(String::from("(+ 1 2)"));
-        let mut p = Parser::new(lexer);
-        let got = p.parse();
-        assert_eq!(got[0].to_string(), "(+ (1 2))");
+        let cell = parse(String::from("(+ 1 2)"));
+        assert_eq!(cell[0].to_string(), "(+ (1 2))");
     }
 
     #[test]
     fn list_nested_expression() {
-        let lexer = Lexer::new(String::from("(+ 1 (- 10 (* 1 (/ 2 1))))"));
-        let mut p = Parser::new(lexer);
-        let got = p.parse();
-        assert_eq!(got[0].to_string(), "(+ (1 (- (10 (* (1 (/ (2 1))))))))");
+        let cell = parse(String::from("(+ 1 (- 10 (* 1 (/ 2 1))))"));
+        assert_eq!(cell[0].to_string(), "(+ (1 (- (10 (* (1 (/ (2 1))))))))");
     }
 }

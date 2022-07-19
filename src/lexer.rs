@@ -36,6 +36,7 @@ impl Lexer {
                 '0'..='9' => self.read_as_number(),
                 _ => Token::PLUS,
             },
+            '"' => self.read_as_string(),
             '-' => match self.peek() {
                 '0'..='9' => self.read_as_number(),
                 _ => Token::MINUS,
@@ -47,6 +48,20 @@ impl Lexer {
         self.read();
 
         token
+    }
+
+    fn read_as_string(&mut self) -> Token {
+        let mut s = String::from("");
+        loop {
+            self.read();
+            s.push(self.ch);
+            if self.peek() == '"' {
+                self.read();
+                break;
+            }
+        }
+
+        Token::STRING(s)
     }
 
     fn read_as_number(&mut self) -> Token {
@@ -65,7 +80,7 @@ impl Lexer {
         }
 
         let s: String = chars.iter().collect();
-        Token::Int(s.parse::<isize>().unwrap())
+        Token::INT(s.parse::<isize>().unwrap())
     }
 
     fn read(&mut self) {
@@ -93,12 +108,18 @@ mod test {
     use super::*;
 
     #[test]
+    fn read_string() {
+        let mut lexer = Lexer::new(String::from(r#""hello""#));
+        assert_eq!(lexer.next_token(), Token::STRING(String::from("hello")));
+    }
+
+    #[test]
     fn basic_arithemetic() {
         let mut lexer = Lexer::new(String::from("(+ 1 2)"));
         assert_eq!(lexer.next_token(), Token::LPAREN);
         assert_eq!(lexer.next_token(), Token::PLUS);
-        assert_eq!(lexer.next_token(), Token::Int(1));
-        assert_eq!(lexer.next_token(), Token::Int(2));
+        assert_eq!(lexer.next_token(), Token::INT(1));
+        assert_eq!(lexer.next_token(), Token::INT(2));
         assert_eq!(lexer.next_token(), Token::RPAREN);
         assert_eq!(lexer.next_token(), Token::EOF);
     }
@@ -111,17 +132,17 @@ mod test {
             Token::PLUS,
             Token::LPAREN,
             Token::MINUS,
-            Token::Int(30),
-            Token::Int(2),
+            Token::INT(30),
+            Token::INT(2),
             Token::RPAREN,
             Token::LPAREN,
             Token::ASTERISK,
             Token::LPAREN,
             Token::SLASH,
-            Token::Int(4),
-            Token::Int(2),
+            Token::INT(4),
+            Token::INT(2),
             Token::RPAREN,
-            Token::Int(3),
+            Token::INT(3),
             Token::RPAREN,
             Token::RPAREN,
             Token::EOF,

@@ -9,6 +9,7 @@ pub enum Symbol {
 #[derive(Debug)]
 pub enum Atom {
     Int(isize),
+    String(String),
     Sym(Symbol),
 }
 
@@ -16,6 +17,7 @@ impl std::fmt::Display for Atom {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Atom::Int(i) => write!(f, "{}", i),
+            Atom::String(s) => write!(f, "{}", s),
             Atom::Sym(sym) => match sym {
                 Symbol::Add => write!(f, "+"),
                 Symbol::Sub => write!(f, "-"),
