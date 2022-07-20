@@ -1,114 +1,53 @@
-use std::ops::{Add, Div, Mul, Sub};
-
 #[derive(Debug)]
-pub enum Symbol {
-    Add,
-    Sub,
-    Mul,
-    Div,
+pub enum ExprErr {
+    Cause(String),
 }
 
-#[derive(Debug)]
-pub enum Atom {
-    Number(Number),
+impl std::string::ToString for ExprErr {
+    fn to_string(&self) -> String {
+        match self {
+            ExprErr::Cause(s) => String::from(s),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum Expr {
+    Number(f64),
     String(String),
-    Sym(Symbol),
+    Symbol(String),
+    List(Vec<Expr>),
+    Nil,
+    Func(fn(&[Expr]) -> Result<Expr, ExprErr>),
 }
 
-impl std::fmt::Display for Atom {
+impl PartialEq for Expr {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Expr::Symbol(a), Expr::Symbol(b)) => a == b,
+            (Expr::Number(a), Expr::Number(b)) => a == b,
+            (Expr::String(a), Expr::String(b)) => a == b,
+            (Expr::List(a), Expr::List(b)) => a == b,
+            (Expr::Nil, Expr::Nil) => true,
+            _ => false,
+        }
+    }
+}
+
+impl std::fmt::Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Atom::String(s) => write!(f, "{}", s),
-            Atom::Number(num) => write!(f, "{}", num),
-            Atom::Sym(sym) => match sym {
-                Symbol::Add => write!(f, "+"),
-                Symbol::Sub => write!(f, "-"),
-                Symbol::Mul => write!(f, "*"),
-                Symbol::Div => write!(f, "/"),
-            },
-        }
-    }
-}
+        let s = match self {
+            Expr::List(exprs) => {
+                let xs = exprs.iter().map(|x| x.to_string()).collect::<Vec<String>>();
+                format!("({})", xs.join(" "))
+            }
+            Expr::Number(num) => num.to_string(),
+            Expr::String(s) => s.to_string(),
+            Expr::Symbol(sym) => sym.to_string(),
+            Expr::Nil => "NIL".to_string(),
+            Expr::Func(_) => "FUNCTION".to_string(),
+        };
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub enum Number {
-    Int(isize),
-    Float(f64),
-}
-
-impl std::fmt::Display for Number {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Number::Int(num) => write!(f, "{}", num.to_string()),
-            Number::Float(num) => write!(f, "{}", num.to_string()),
-        }
-    }
-}
-
-impl Add for Number {
-    type Output = Self;
-
-    fn add(self, r: Self) -> Number {
-        match (self, r) {
-            (Number::Int(l), Number::Int(r)) => (Number::Int(l + r)),
-            (Number::Float(l), Number::Float(r)) => (Number::Float(l + r)),
-            (Number::Int(l), Number::Float(r)) => (Number::Float(l as f64 + r)),
-            (Number::Float(l), Number::Int(r)) => (Number::Float(l + r as f64)),
-        }
-    }
-}
-
-impl Sub for Number {
-    type Output = Self;
-
-    fn sub(self, r: Self) -> Number {
-        match (self, r) {
-            (Number::Int(l), Number::Int(r)) => (Number::Int(l - r)),
-            (Number::Float(l), Number::Float(r)) => (Number::Float(l - r)),
-            (Number::Int(l), Number::Float(r)) => (Number::Float(l as f64 - r)),
-            (Number::Float(l), Number::Int(r)) => (Number::Float(l - r as f64)),
-        }
-    }
-}
-
-impl Mul for Number {
-    type Output = Self;
-
-    fn mul(self, r: Self) -> Number {
-        match (self, r) {
-            (Number::Int(l), Number::Int(r)) => (Number::Int(l * r)),
-            (Number::Float(l), Number::Float(r)) => (Number::Float(l * r)),
-            (Number::Int(l), Number::Float(r)) => (Number::Float(l as f64 * r)),
-            (Number::Float(l), Number::Int(r)) => (Number::Float(l * r as f64)),
-        }
-    }
-}
-
-impl Div for Number {
-    type Output = Self;
-
-    fn div(self, r: Self) -> Number {
-        match (self, r) {
-            (Number::Int(l), Number::Int(r)) => (Number::Int(l / r)),
-            (Number::Float(l), Number::Float(r)) => (Number::Float(l / r)),
-            (Number::Int(l), Number::Float(r)) => (Number::Float(l as f64 / r)),
-            (Number::Float(l), Number::Int(r)) => (Number::Float(l / r as f64)),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum Cell {
-    Cons(Atom, Option<Box<Cell>>),
-}
-
-impl std::fmt::Display for Cell {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Cell::Cons(atom, cell) => match cell {
-                Some(cell) => write!(f, "({} {})", atom, cell),
-                None => write!(f, "{}", atom),
-            },
-        }
+        write!(f, "{}", s)
     }
 }

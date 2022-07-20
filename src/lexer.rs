@@ -42,12 +42,26 @@ impl Lexer {
             },
             '0'..='9' => self.read_as_number(),
             '"' => self.read_as_string(),
+            'a'..='z' | 'A'..='Z' => self.read_as_literal(),
             '\0' => Token::EOF,
-            _ => Token::ILLEGAL,
+            _ => Token::ILLEGAL(self.ch.to_string()),
         };
         self.read();
 
         token
+    }
+
+    fn read_as_literal(&mut self) -> Token {
+        let mut s = String::from("");
+        loop {
+            s.push(self.ch);
+            match self.peek() {
+                'a'..='z' | 'A'..='Z' => self.read(),
+                _ => break,
+            }
+        }
+
+        Token::LITERAL(s.to_uppercase())
     }
 
     fn read_as_string(&mut self) -> Token {
@@ -80,11 +94,7 @@ impl Lexer {
         }
 
         let s: String = chars.iter().collect();
-        if s.contains(".") {
-            Token::FLOAT(s.parse::<f64>().unwrap())
-        } else {
-            Token::INT(s.parse::<isize>().unwrap())
-        }
+        Token::NUMBER(s.parse::<f64>().unwrap())
     }
 
     fn read(&mut self) {
@@ -118,11 +128,32 @@ mod test {
     }
 
     #[test]
+    fn read_literal() {
+        let mut lexer = Lexer::new(String::from("(setq a 2)"));
+        assert_eq!(lexer.next_token(), Token::LPAREN);
+        assert_eq!(lexer.next_token(), Token::LITERAL(String::from("SETQ")));
+        assert_eq!(lexer.next_token(), Token::LITERAL(String::from("A")));
+        assert_eq!(lexer.next_token(), Token::NUMBER(2.0));
+        assert_eq!(lexer.next_token(), Token::RPAREN);
+    }
+
+    #[test]
+    fn read_var() {
+        let mut lexer = Lexer::new(String::from("(+ a 2 a)"));
+        assert_eq!(lexer.next_token(), Token::LPAREN);
+        assert_eq!(lexer.next_token(), Token::PLUS);
+        assert_eq!(lexer.next_token(), Token::LITERAL(String::from("A")));
+        assert_eq!(lexer.next_token(), Token::NUMBER(2.0));
+        assert_eq!(lexer.next_token(), Token::LITERAL(String::from("A")));
+        assert_eq!(lexer.next_token(), Token::RPAREN);
+    }
+
+    #[test]
     fn read_number() {
         let tests = vec![
-            ("1", Token::INT(1)),
-            ("1.5", Token::FLOAT(1.5)),
-            ("2.345", Token::FLOAT(2.345)),
+            ("1", Token::NUMBER(1.0)),
+            ("1.5", Token::NUMBER(1.5)),
+            ("2.345", Token::NUMBER(2.345)),
         ];
         for test in tests {
             let mut lexer = Lexer::new(test.0.to_string());
@@ -135,8 +166,8 @@ mod test {
         let mut lexer = Lexer::new(String::from("(+ 1 2)"));
         assert_eq!(lexer.next_token(), Token::LPAREN);
         assert_eq!(lexer.next_token(), Token::PLUS);
-        assert_eq!(lexer.next_token(), Token::INT(1));
-        assert_eq!(lexer.next_token(), Token::INT(2));
+        assert_eq!(lexer.next_token(), Token::NUMBER(1.0));
+        assert_eq!(lexer.next_token(), Token::NUMBER(2.0));
         assert_eq!(lexer.next_token(), Token::RPAREN);
         assert_eq!(lexer.next_token(), Token::EOF);
     }
@@ -149,17 +180,17 @@ mod test {
             Token::PLUS,
             Token::LPAREN,
             Token::MINUS,
-            Token::INT(30),
-            Token::INT(2),
+            Token::NUMBER(30.0),
+            Token::NUMBER(2.0),
             Token::RPAREN,
             Token::LPAREN,
             Token::ASTERISK,
             Token::LPAREN,
             Token::SLASH,
-            Token::INT(4),
-            Token::INT(2),
+            Token::NUMBER(4.0),
+            Token::NUMBER(2.0),
             Token::RPAREN,
-            Token::INT(3),
+            Token::NUMBER(3.0),
             Token::RPAREN,
             Token::RPAREN,
             Token::EOF,

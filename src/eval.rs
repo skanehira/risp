@@ -1,48 +1,113 @@
-use super::ast::{Atom, Cell, Cell::Cons, Number, Symbol, Symbol::*};
+use crate::ast::{Expr, ExprErr};
+use std::collections::HashMap;
 
-pub struct Evaluator {}
+pub struct Evaluator {
+    data: HashMap<String, Expr>,
+}
+
+fn parse_list_of_floats(args: &[Expr]) -> Result<Vec<f64>, ExprErr> {
+    args.iter()
+        .map(|x| match x {
+            Expr::Number(num) => Ok(*num),
+            _ => Err(ExprErr::Cause(format!("{} is not number", x))),
+        })
+        .collect()
+}
+
+macro_rules! basic_op {
+    ($fn: expr) => {
+        |args: &[Expr]| -> Result<Expr, ExprErr> {
+            let floats = parse_list_of_floats(args)?;
+            let (first, rest) = floats
+                .split_first()
+                .ok_or_else(|| ExprErr::Cause("expected at least one number".to_string()))?;
+            Ok(Expr::Number(rest.iter().fold(*first, $fn)))
+        }
+    };
+}
 
 impl Evaluator {
     pub fn new() -> Self {
-        Evaluator {}
+        let mut data = HashMap::<String, Expr>::new();
+        data.insert("+".to_string(), Expr::Func(basic_op!(|sum, x| sum + x)));
+        data.insert("-".to_string(), Expr::Func(basic_op!(|sum, x| sum - x)));
+        data.insert("*".to_string(), Expr::Func(basic_op!(|sum, x| sum * x)));
+        data.insert("/".to_string(), Expr::Func(basic_op!(|sum, x| sum / x)));
+
+        Evaluator { data }
     }
 
-    pub fn eval(&self, cell: Box<Cell>) -> String {
-        match *cell {
-            Cons(value, list) => match value {
-                Atom::Sym(op) => match op {
-                    Add | Sub | Mul | Div => {
-                        Atom::Number(self.op_calc(&op, list).unwrap()).to_string()
-                    }
-                },
-                Atom::Number(num) => num.to_string(),
-                Atom::String(s) => s,
+    fn print_env(&mut self) -> String {
+        self.data
+            .clone()
+            .iter()
+            .map(|x| format!("{}={}", x.0, x.1))
+            .collect::<Vec<String>>()
+            .join(" ")
+    }
+
+    pub fn eval(&mut self, expr: &Expr) -> Result<Expr, ExprErr> {
+        match expr {
+            Expr::String(_) => Ok(expr.clone()),
+            Expr::Number(_) => Ok(expr.clone()),
+            Expr::Nil => Ok(expr.clone()),
+            Expr::Symbol(sym) => match self.data.get(sym) {
+                Some(expr) => Ok(expr.clone()),
+                None => Err(ExprErr::Cause(format!(
+                    "not found symbol: {}, env: {}",
+                    sym,
+                    self.print_env(),
+                ))),
             },
-        }
-    }
-
-    fn op_calc(&self, op: &Symbol, list: Option<Box<Cell>>) -> Option<Number> {
-        match list {
-            Some(list) => match *list {
-                Cons(value, list) => match value {
-                    Atom::Number(v) => match list {
-                        Some(list) => {
-                            let vv = self.op_calc(op, Some(list)).unwrap();
-                            let result = match op {
-                                Add => v + vv,
-                                Sub => v - vv,
-                                Mul => v * vv,
-                                Div => v / vv,
-                            };
-                            Some(result)
+            Expr::List(list) => {
+                let (first, reset) = list
+                    .split_first()
+                    .ok_or_else(|| ExprErr::Cause("expected at least one number".to_string()))?;
+                match self.eval_builtin(first, reset) {
+                    Some(expr) => expr,
+                    None => {
+                        let expr = self.eval(first)?;
+                        match expr {
+                            Expr::Func(f) => f(self.eval_args(reset)?.as_slice()),
+                            _ => unreachable!(),
                         }
-                        None => Some(v),
-                    },
-                    Atom::Sym(op) => self.op_calc(&op, list),
-                    _ => unreachable!(),
-                },
-            },
-            None => None,
+                    }
+                }
+            }
+            _ => unreachable!(),
         }
+    }
+
+    pub fn eval_args(&mut self, args: &[Expr]) -> Result<Vec<Expr>, ExprErr> {
+        args.iter().map(|x| self.eval(x)).collect()
+    }
+
+    pub fn eval_builtin(&mut self, first: &Expr, args: &[Expr]) -> Option<Result<Expr, ExprErr>> {
+        match first {
+            Expr::Symbol(symbol) => match symbol.as_str() {
+                "DEF" => Some(self.eval_def(args)),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
+    pub fn eval_def(&mut self, args: &[Expr]) -> Result<Expr, ExprErr> {
+        let first = args
+            .first()
+            .ok_or(ExprErr::Cause("expected first arg".to_string()))?;
+        let key = match first {
+            Expr::Symbol(s) => Ok(s.clone()),
+            _ => Err(ExprErr::Cause("first arg must be symbol".to_string())),
+        }?;
+
+        let second = args
+            .get(1)
+            .ok_or(ExprErr::Cause("expected second arg".to_string()))?;
+        let value = self.eval(second)?;
+
+        self.data.insert(key, value.clone());
+
+        Ok(value.clone())
     }
 }
