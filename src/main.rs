@@ -26,7 +26,7 @@ fn main() -> Result<()> {
                     Err(e) => e.to_string(),
                 };
                 rl.add_history_entry(line.as_str());
-                println!(";; => {}", result);
+                println!("{}", result);
             }
             Err(ReadlineError::Interrupted) => {
                 break;
@@ -113,8 +113,8 @@ mod tests {
     #[test]
     fn eval_symbol() {
         test(vec![
-            ("(def a 10)", "10"),
-            ("(def b (+ 1 2))", "3"),
+            ("(setq a 10)", "10"),
+            ("(setq b (+ 1 2))", "3"),
             ("a", "10"),
             ("b", "3"),
             ("(+ 5 a)", "15"),

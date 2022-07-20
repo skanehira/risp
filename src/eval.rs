@@ -74,7 +74,7 @@ impl Evaluator {
                     }
                 }
             }
-            _ => unreachable!(),
+            _ => Err(ExprErr::Cause(format!("invalid expr: {}", expr))),
         }
     }
 
@@ -85,14 +85,14 @@ impl Evaluator {
     pub fn eval_builtin(&mut self, first: &Expr, args: &[Expr]) -> Option<Result<Expr, ExprErr>> {
         match first {
             Expr::Symbol(symbol) => match symbol.as_str() {
-                "DEF" => Some(self.eval_def(args)),
+                "SETQ" => Some(self.eval_setq(args)),
                 _ => None,
             },
             _ => None,
         }
     }
 
-    pub fn eval_def(&mut self, args: &[Expr]) -> Result<Expr, ExprErr> {
+    pub fn eval_setq(&mut self, args: &[Expr]) -> Result<Expr, ExprErr> {
         let first = args
             .first()
             .ok_or(ExprErr::Cause("expected first arg".to_string()))?;
