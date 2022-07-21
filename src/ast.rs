@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 #[derive(Debug)]
 pub enum ExprErr {
     Cause(String),
@@ -12,6 +14,12 @@ impl std::string::ToString for ExprErr {
 }
 
 #[derive(Clone)]
+pub struct Lambda {
+    pub args: Vec<String>,
+    pub body: Rc<Expr>,
+}
+
+#[derive(Clone)]
 pub enum Expr {
     Number(f64),
     String(String),
@@ -19,6 +27,7 @@ pub enum Expr {
     List(Vec<Expr>),
     Nil,
     Func(fn(&[Expr]) -> Result<Expr, ExprErr>),
+    Lambda(Lambda),
 }
 
 impl PartialEq for Expr {
@@ -46,6 +55,7 @@ impl std::fmt::Display for Expr {
             Expr::Symbol(sym) => sym.to_string(),
             Expr::Nil => "NIL".to_string(),
             Expr::Func(_) => "FUNCTION".to_string(),
+            Expr::Lambda(_) => "LAMBDA".to_string(),
         };
 
         write!(f, "{}", s)

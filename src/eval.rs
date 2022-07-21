@@ -1,5 +1,5 @@
-use crate::ast::{Expr, ExprErr};
-use std::collections::HashMap;
+use crate::ast::{Expr, ExprErr, Lambda};
+use std::{collections::HashMap, rc::Rc};
 
 pub type ExprEnv = HashMap<String, Expr>;
 pub struct Evaluator {}
@@ -9,6 +9,15 @@ fn parse_list_of_floats(args: &[Expr]) -> Result<Vec<f64>, ExprErr> {
         .map(|x| match x {
             Expr::Number(num) => Ok(*num),
             _ => Err(ExprErr::Cause(format!("{} is not number", x))),
+        })
+        .collect()
+}
+
+fn parse_list_of_symbols(args: &[Expr]) -> Result<Vec<String>, ExprErr> {
+    args.iter()
+        .map(|x| match x {
+            Expr::Symbol(symbol) => Ok(symbol.clone()),
+            _ => Err(ExprErr::Cause(format!("{} is not symbol", x))),
         })
         .collect()
 }
@@ -61,15 +70,16 @@ impl Evaluator {
                 ))),
             },
             Expr::List(list) => {
-                let (first, reset) = list
+                let (first, rest) = list
                     .split_first()
                     .ok_or_else(|| ExprErr::Cause("expected at least one number".to_string()))?;
-                match self.eval_builtin(first, reset, env) {
+                match self.eval_builtin(first, rest, env) {
                     Some(expr) => expr,
                     None => {
                         let expr = self.eval(first, env)?;
                         match expr {
-                            Expr::Func(f) => f(self.eval_args(reset, env)?.as_slice()),
+                            Expr::Func(f) => f(self.eval_args(rest, env)?.as_slice()),
+                            Expr::Lambda(lambda) => self.eval_lambda(lambda, rest, env),
                             _ => unreachable!(),
                         }
                     }
@@ -92,10 +102,77 @@ impl Evaluator {
         match first {
             Expr::Symbol(symbol) => match symbol.as_str() {
                 "SETQ" => Some(self.eval_setq(args, env)),
+                "DEFUN" => Some(self.eval_defun(args, env)),
                 _ => None,
             },
             _ => None,
         }
+    }
+
+    pub fn eval_lambda(
+        &mut self,
+        lambda: Lambda,
+        outer_args: &[Expr],
+        env: &mut ExprEnv,
+    ) -> Result<Expr, ExprErr> {
+        if lambda.args.len() != outer_args.len() {
+            return Err(ExprErr::Cause(
+                "number of args and lambda's arg is not same".to_string(),
+            ));
+        }
+
+        let mut local_env = env.clone();
+
+        for (i, k) in lambda.args.iter().enumerate() {
+            let value = outer_args
+                .get(i)
+                .ok_or(ExprErr::Cause("not found value from env".to_string()))?;
+            local_env.insert(k.clone(), value.clone());
+        }
+
+        let result = self.eval(&lambda.body, &mut local_env)?;
+
+        Ok(result)
+    }
+
+    // parse defun and store to env
+    // (defun add (a b) (+ a b))
+    pub fn eval_defun(&mut self, args: &[Expr], env: &mut ExprEnv) -> Result<Expr, ExprErr> {
+        if args.len() != 3 {
+            return Err(ExprErr::Cause("unexpected function definition".to_string()));
+        }
+
+        let mut itr = args.iter();
+        let symbol = itr
+            .next()
+            .ok_or(ExprErr::Cause("cannot get function name".to_string()))?;
+
+        let name = match symbol {
+            Expr::Symbol(symbol) => Ok(symbol),
+            _ => Err(ExprErr::Cause(format!("invalid symbol: {}", symbol))),
+        }?;
+
+        let args_expr = itr
+            .next()
+            .ok_or(ExprErr::Cause("cannot get function args".to_string()))?;
+
+        let args = match args_expr {
+            Expr::List(list) => Ok(list),
+            _ => Err(ExprErr::Cause(format!("invalid list: {}", args_expr))),
+        }?;
+        let args = parse_list_of_symbols(args)?;
+
+        let body = itr
+            .next()
+            .ok_or(ExprErr::Cause("cannot get function body".to_string()))?;
+
+        let lambda = Expr::Lambda(Lambda {
+            args,
+            body: Rc::new(body.clone()),
+        });
+        env.insert(name.clone(), lambda);
+
+        Ok(Expr::String(name.clone()))
     }
 
     pub fn eval_setq(&mut self, args: &[Expr], env: &mut ExprEnv) -> Result<Expr, ExprErr> {

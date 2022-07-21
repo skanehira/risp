@@ -127,4 +127,14 @@ mod tests {
             ("(+ (+ 5 4) a)", "19"),
         ]);
     }
+
+    #[test]
+    fn eval_func() {
+        test(vec![
+            ("(defun add (a b) (+ a b))", "ADD"),
+            ("(add 10 5)", "15"),
+            ("(defun div (a b) (/ a b))", "DIV"),
+            ("(div 10 5)", "2"),
+        ])
+    }
 }
