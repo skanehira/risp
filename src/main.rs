@@ -1,3 +1,4 @@
+use eval::ExprEnv;
 use rustyline::error::ReadlineError;
 use rustyline::{Editor, Result};
 mod ast;
@@ -10,6 +11,7 @@ fn main() -> Result<()> {
     let mut rl = Editor::<()>::new()?;
     _ = rl.load_history("history.txt");
     let mut evaluator = eval::Evaluator::new();
+    let mut env: ExprEnv = eval::default_env();
 
     loop {
         let readline = rl.readline("risp>> ");
@@ -19,7 +21,7 @@ fn main() -> Result<()> {
                 let mut p = parser::Parser::new(l);
 
                 let result = match p.parse() {
-                    Ok(expr) => match evaluator.eval(&expr) {
+                    Ok(expr) => match evaluator.eval(&expr, &mut env) {
                         Ok(result) => result.to_string(),
                         Err(e) => e.to_string(),
                     },
@@ -49,11 +51,12 @@ mod tests {
 
     fn test(tests: Vec<(&str, &str)>) {
         let mut evaluator = eval::Evaluator::new();
+        let mut env = eval::default_env();
         for (i, test) in tests.iter().enumerate() {
             let l = lexer::Lexer::new(test.0.to_string());
             let mut p = parser::Parser::new(l);
             let expr = p.parse().unwrap();
-            let result = evaluator.eval(&expr).unwrap();
+            let result = evaluator.eval(&expr, &mut env).unwrap();
 
             assert_eq!(
                 result.to_string(),
