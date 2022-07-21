@@ -135,6 +135,11 @@ mod tests {
             ("(add 10 5)", "15"),
             ("(defun div (a b) (/ a b))", "DIV"),
             ("(div 10 5)", "2"),
+            ("(setq a 5)", "5"),
+            ("(add a 5)", "10"),
+            ("(defun half (x) (/ x 2))", "HALF"),
+            ("(defun medium (x y) (half (+ x y)))", "MEDIUM"),
+            ("(medium 2 4)", "3"),
         ])
     }
 }

@@ -121,10 +121,15 @@ impl Evaluator {
             ));
         }
 
+        let mut args = Vec::<Expr>::new();
+        for arg in outer_args {
+            args.push(self.eval(arg, env)?);
+        }
+
         let mut local_env = env.clone();
 
         for (i, k) in lambda.args.iter().enumerate() {
-            let value = outer_args
+            let value = args
                 .get(i)
                 .ok_or(ExprErr::Cause("not found value from env".to_string()))?;
             local_env.insert(k.clone(), value.clone());
