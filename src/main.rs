@@ -30,7 +30,7 @@ fn main() -> Result<()> {
 
     if atty::is(atty::Stream::Stdin) {
         let args = env::args().collect::<Vec<String>>();
-        if args.len() == 0 {
+        if args.len() == 1 {
             let mut rl = Editor::<()>::new()?;
             _ = rl.load_history("history.txt");
             loop {
@@ -100,18 +100,13 @@ mod tests {
     }
 
     #[test]
-    fn eval_int() {
-        test(vec![("1", "1"), ("10", "10"), ("-10", "-10")]);
-    }
-
-    #[test]
-    fn eval_float() {
-        test(vec![("1.5", "1.5"), ("10.5", "10.5")]);
-    }
-
-    #[test]
-    fn eval_string() {
+    fn eval_basic_atom() {
         test(vec![
+            ("1.5", "1.5"),
+            ("10.5", "10.5"),
+            ("1", "1"),
+            ("10", "10"),
+            ("-10", "-10"),
             ("\"hello world\"", "hello world"),
             ("\"hello1234\"", "hello1234"),
             ("\"123\"", "123"),
@@ -119,18 +114,10 @@ mod tests {
     }
 
     #[test]
-    fn eval_int_float() {
-        test(vec![
-            ("(+ 1.5 10)", "11.5"),
-            ("(- 10.5 0.5)", "10"),
-            ("(* 10 10)", "100"),
-            ("(/ 20 10)", "2"),
-        ]);
-    }
-
-    #[test]
     fn eval_calc() {
         test(vec![
+            ("(* 10 10)", "100"),
+            ("(- 20 10)", "10"),
             ("(+ -10 5)", "-5"),
             ("(* 10 5)", "50"),
             ("(/ 10 5)", "2"),

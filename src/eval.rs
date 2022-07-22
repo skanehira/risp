@@ -61,6 +61,7 @@ impl Evaluator {
             Expr::String(_) => Ok(expr.clone()),
             Expr::Number(_) => Ok(expr.clone()),
             Expr::Nil => Ok(expr.clone()),
+            Expr::True => Ok(expr.clone()),
             Expr::Symbol(sym) => match env.get(sym) {
                 Some(expr) => Ok(expr.clone()),
                 None => Err(ExprErr::Cause(format!(

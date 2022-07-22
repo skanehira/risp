@@ -52,6 +52,9 @@ impl Lexer {
     }
 
     fn read_as_literal(&mut self) -> Token {
+        if self.ch == 't' && self.peek() == '\0' {
+            return Token::TRUE;
+        }
         let mut s = String::from("");
         loop {
             s.push(self.ch);
@@ -59,6 +62,10 @@ impl Lexer {
                 'a'..='z' | 'A'..='Z' => self.read(),
                 _ => break,
             }
+        }
+
+        if s.to_uppercase() == "NIL" {
+            return Token::NIL;
         }
 
         Token::LITERAL(s.to_uppercase())

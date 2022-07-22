@@ -36,6 +36,12 @@ impl Parser {
             Token::SLASH => {
                 return Ok(Expr::Symbol("/".to_string()));
             }
+            Token::TRUE => {
+                return Ok(Expr::True);
+            }
+            Token::NIL => {
+                return Ok(Expr::Nil);
+            }
             Token::ILLEGAL(token) => {
                 return Err(ExprErr::Cause(format!("invalid token: {}", token)));
             }
@@ -75,6 +81,8 @@ mod test {
             "1",
             "hello",
             "(+ 1 2 (* 1 3))",
+            "t",
+            "nil",
         ];
         for test in tests {
             let l = Lexer::new(String::from(test));

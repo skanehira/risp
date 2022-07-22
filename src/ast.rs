@@ -25,6 +25,7 @@ pub enum Expr {
     String(String),
     Symbol(String),
     List(Vec<Expr>),
+    True,
     Nil,
     Func(fn(&[Expr]) -> Result<Expr, ExprErr>),
     Lambda(Lambda),
@@ -56,6 +57,7 @@ impl std::fmt::Display for Expr {
             Expr::Nil => "NIL".to_string(),
             Expr::Func(_) => "FUNCTION".to_string(),
             Expr::Lambda(_) => "LAMBDA".to_string(),
+            Expr::True => "T".to_string(),
         };
 
         write!(f, "{}", s)
