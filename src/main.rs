@@ -1,4 +1,8 @@
-use eval::ExprEnv;
+use std::fs::File;
+use std::io::BufRead;
+use std::{env, io};
+
+use eval::{Evaluator, ExprEnv};
 use rustyline::error::ReadlineError;
 use rustyline::{Editor, Result};
 mod ast;
@@ -7,42 +11,68 @@ mod lexer;
 mod parser;
 mod token;
 
+fn eval(evaluator: &mut Evaluator, env: &mut ExprEnv, line: &String) -> String {
+    let l = lexer::Lexer::new(line.clone());
+    let mut p = parser::Parser::new(l);
+    let result = match p.parse() {
+        Ok(expr) => match evaluator.eval(&expr, env) {
+            Ok(result) => result.to_string(),
+            Err(e) => e.to_string(),
+        },
+        Err(e) => e.to_string(),
+    };
+    result
+}
+
 fn main() -> Result<()> {
-    let mut rl = Editor::<()>::new()?;
-    _ = rl.load_history("history.txt");
     let mut evaluator = eval::Evaluator::new();
     let mut env: ExprEnv = eval::default_env();
 
-    loop {
-        let readline = rl.readline("risp>> ");
-        match readline {
-            Ok(line) => {
-                let l = lexer::Lexer::new(line.clone());
-                let mut p = parser::Parser::new(l);
-
-                let result = match p.parse() {
-                    Ok(expr) => match evaluator.eval(&expr, &mut env) {
-                        Ok(result) => result.to_string(),
-                        Err(e) => e.to_string(),
-                    },
-                    Err(e) => e.to_string(),
-                };
-                rl.add_history_entry(line.as_str());
-                println!("{}", result);
+    if atty::is(atty::Stream::Stdin) {
+        let args = env::args().collect::<Vec<String>>();
+        if args.len() == 0 {
+            let mut rl = Editor::<()>::new()?;
+            _ = rl.load_history("history.txt");
+            loop {
+                let readline = rl.readline("risp>> ");
+                match readline {
+                    Ok(line) => {
+                        rl.add_history_entry(line.as_str());
+                        let result = eval(&mut evaluator, &mut env, &line);
+                        println!("{}", result);
+                    }
+                    Err(ReadlineError::Interrupted) => {
+                        break;
+                    }
+                    Err(ReadlineError::Eof) => {
+                        break;
+                    }
+                    Err(err) => {
+                        println!("Error: {:?}", err);
+                        break;
+                    }
+                }
             }
-            Err(ReadlineError::Interrupted) => {
-                break;
-            }
-            Err(ReadlineError::Eof) => {
-                break;
-            }
-            Err(err) => {
-                println!("Error: {:?}", err);
-                break;
+            return rl.save_history("history.txt");
+        } else {
+            let arg = args.get(1);
+            if let Some(filename) = arg {
+                let file = File::open(filename)?;
+                for line in io::BufReader::new(file).lines() {
+                    let result = eval(&mut evaluator, &mut env, &line?);
+                    println!("{}", result);
+                }
             }
         }
+    } else {
+        let stdin = io::stdin();
+        for line in stdin.lines() {
+            let result = eval(&mut evaluator, &mut env, &line?);
+            println!("{}", result);
+        }
     }
-    rl.save_history("history.txt")
+
+    Ok(())
 }
 
 #[cfg(test)]

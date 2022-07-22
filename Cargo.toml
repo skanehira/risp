@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 rustyline = "10.0.0"
+atty = "0.2"
