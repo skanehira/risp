@@ -122,6 +122,12 @@ mod test {
     use super::*;
 
     #[test]
+    fn read_invalid_token() {
+        let mut lexer = Lexer::new(String::from("^"));
+        assert_eq!(lexer.next_token(), Token::ILLEGAL(String::from("^")));
+    }
+
+    #[test]
     fn read_string() {
         let mut lexer = Lexer::new(String::from(r#""hello""#));
         assert_eq!(lexer.next_token(), Token::STRING(String::from("hello")));
