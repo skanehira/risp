@@ -1,10 +1,4 @@
-use std::fs::File;
-use std::io::BufRead;
-use std::{env, io};
-
 use eval::{Evaluator, ExprEnv};
-use rustyline::error::ReadlineError;
-use rustyline::{Editor, Result};
 mod ast;
 mod eval;
 mod lexer;
@@ -23,21 +17,25 @@ fn eval(evaluator: &mut Evaluator, env: &mut ExprEnv, line: &str) -> String {
     }
 }
 
-fn main() -> Result<()> {
-    let mut evaluator = eval::Evaluator::new();
-    let mut env: ExprEnv = eval::default_env();
+#[cfg(not(all(target_arch = "wasm32")))]
+fn repl(evaluator: &mut Evaluator, env: &mut ExprEnv) {
+    use rustyline::error::ReadlineError;
+    use rustyline::Editor;
+    use std::env;
+    use std::fs::File;
+    use std::io::{self, BufRead};
 
     if atty::is(atty::Stream::Stdin) {
         let args = env::args().collect::<Vec<String>>();
         if args.len() == 1 {
-            let mut rl = Editor::<()>::new()?;
+            let mut rl = Editor::<()>::new().unwrap();
             _ = rl.load_history("history.txt");
             loop {
                 let readline = rl.readline("risp>> ");
                 match readline {
                     Ok(line) => {
                         rl.add_history_entry(line.as_str());
-                        let result = eval(&mut evaluator, &mut env, &line);
+                        let result = eval(evaluator, env, &line);
                         println!("{}", result);
                     }
                     Err(ReadlineError::Interrupted) => {
@@ -52,26 +50,35 @@ fn main() -> Result<()> {
                     }
                 }
             }
-            return rl.save_history("history.txt");
+            rl.save_history("history.txt").expect("cannot save history");
         } else {
             let arg = args.get(1);
             if let Some(filename) = arg {
-                let file = File::open(filename)?;
+                let file = File::open(filename).unwrap();
                 for line in io::BufReader::new(file).lines() {
-                    let result = eval(&mut evaluator, &mut env, &line?);
+                    let result = eval(evaluator, env, &line.unwrap());
                     println!("{}", result);
                 }
             }
         }
-    } else {
-        let stdin = io::stdin();
-        for line in stdin.lines() {
-            let result = eval(&mut evaluator, &mut env, &line?);
-            println!("{}", result);
-        }
     }
+}
 
-    Ok(())
+#[cfg(target_arch = "wasm32")]
+fn repl(evaluator: &mut Evaluator, env: &mut ExprEnv) {
+    use std::io;
+    let stdin = io::stdin();
+    for line in stdin.lines() {
+        let result = eval(evaluator, env, &line.unwrap());
+        println!("{}", result);
+    }
+}
+
+fn main() {
+    let mut evaluator = eval::Evaluator::new();
+    let mut env: ExprEnv = eval::default_env();
+
+    repl(&mut evaluator, &mut env)
 }
 
 #[cfg(test)]
