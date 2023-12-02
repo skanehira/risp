@@ -17,7 +17,7 @@ fn eval(evaluator: &mut Evaluator, env: &mut ExprEnv, line: &str) -> String {
     }
 }
 
-#[cfg(not(all(target_arch = "wasm32")))]
+#[cfg(not(target_arch = "wasm32"))]
 fn repl(evaluator: &mut Evaluator, env: &mut ExprEnv) {
     use rustyline::error::ReadlineError;
     use rustyline::Editor;
