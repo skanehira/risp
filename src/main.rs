@@ -11,17 +11,16 @@ mod lexer;
 mod parser;
 mod token;
 
-fn eval(evaluator: &mut Evaluator, env: &mut ExprEnv, line: &String) -> String {
-    let l = lexer::Lexer::new(line.clone());
+fn eval(evaluator: &mut Evaluator, env: &mut ExprEnv, line: &str) -> String {
+    let l = lexer::Lexer::new(line.into());
     let mut p = parser::Parser::new(l);
-    let result = match p.parse() {
+    match p.parse() {
         Ok(expr) => match evaluator.eval(&expr, env) {
             Ok(result) => result.to_string(),
             Err(e) => e.to_string(),
         },
         Err(e) => e.to_string(),
-    };
-    result
+    }
 }
 
 fn main() -> Result<()> {
@@ -93,7 +92,7 @@ mod tests {
                 test.1,
                 "test[{}] fail: got={}, want={}",
                 i,
-                result.to_string(),
+                result,
                 test.1
             );
         }

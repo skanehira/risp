@@ -28,23 +28,23 @@ impl Lexer {
             self.read();
         }
         let token = match self.ch {
-            '(' => Token::LPAREN,
-            ')' => Token::RPAREN,
-            '*' => Token::ASTERISK,
-            '/' => Token::SLASH,
+            '(' => Token::Lparen,
+            ')' => Token::Rparen,
+            '*' => Token::Asterfisk,
+            '/' => Token::Slash,
             '+' => match self.peek() {
                 '0'..='9' => self.read_as_number(),
-                _ => Token::PLUS,
+                _ => Token::Plus,
             },
             '-' => match self.peek() {
                 '0'..='9' => self.read_as_number(),
-                _ => Token::MINUS,
+                _ => Token::Minus,
             },
             '0'..='9' => self.read_as_number(),
             '"' => self.read_as_string(),
             'a'..='z' | 'A'..='Z' => self.read_as_literal(),
-            '\0' => Token::EOF,
-            _ => Token::ILLEGAL(self.ch.to_string()),
+            '\0' => Token::Eof,
+            _ => Token::Illegal(self.ch.to_string()),
         };
         self.read();
 
@@ -53,7 +53,7 @@ impl Lexer {
 
     fn read_as_literal(&mut self) -> Token {
         if self.ch == 't' && self.peek() == '\0' {
-            return Token::TRUE;
+            return Token::True;
         }
         let mut s = String::from("");
         loop {
@@ -65,10 +65,10 @@ impl Lexer {
         }
 
         if s.to_uppercase() == "NIL" {
-            return Token::NIL;
+            return Token::Nil;
         }
 
-        Token::LITERAL(s.to_uppercase())
+        Token::Literal(s.to_uppercase())
     }
 
     fn read_as_string(&mut self) -> Token {
@@ -82,7 +82,7 @@ impl Lexer {
             }
         }
 
-        Token::STRING(s)
+        Token::String(s)
     }
 
     fn read_as_number(&mut self) -> Token {
@@ -101,7 +101,7 @@ impl Lexer {
         }
 
         let s: String = chars.iter().collect();
-        Token::NUMBER(s.parse::<f64>().unwrap())
+        Token::Number(s.parse::<f64>().unwrap())
     }
 
     fn read(&mut self) {
@@ -131,42 +131,42 @@ mod test {
     #[test]
     fn read_invalid_token() {
         let mut lexer = Lexer::new(String::from("^"));
-        assert_eq!(lexer.next_token(), Token::ILLEGAL(String::from("^")));
+        assert_eq!(lexer.next_token(), Token::Illegal(String::from("^")));
     }
 
     #[test]
     fn read_string() {
         let mut lexer = Lexer::new(String::from(r#""hello""#));
-        assert_eq!(lexer.next_token(), Token::STRING(String::from("hello")));
+        assert_eq!(lexer.next_token(), Token::String(String::from("hello")));
     }
 
     #[test]
     fn read_literal() {
         let mut lexer = Lexer::new(String::from("(setq a 2)"));
-        assert_eq!(lexer.next_token(), Token::LPAREN);
-        assert_eq!(lexer.next_token(), Token::LITERAL(String::from("SETQ")));
-        assert_eq!(lexer.next_token(), Token::LITERAL(String::from("A")));
-        assert_eq!(lexer.next_token(), Token::NUMBER(2.0));
-        assert_eq!(lexer.next_token(), Token::RPAREN);
+        assert_eq!(lexer.next_token(), Token::Lparen);
+        assert_eq!(lexer.next_token(), Token::Literal(String::from("SETQ")));
+        assert_eq!(lexer.next_token(), Token::Literal(String::from("A")));
+        assert_eq!(lexer.next_token(), Token::Number(2.0));
+        assert_eq!(lexer.next_token(), Token::Rparen);
     }
 
     #[test]
     fn read_var() {
         let mut lexer = Lexer::new(String::from("(+ a 2 a)"));
-        assert_eq!(lexer.next_token(), Token::LPAREN);
-        assert_eq!(lexer.next_token(), Token::PLUS);
-        assert_eq!(lexer.next_token(), Token::LITERAL(String::from("A")));
-        assert_eq!(lexer.next_token(), Token::NUMBER(2.0));
-        assert_eq!(lexer.next_token(), Token::LITERAL(String::from("A")));
-        assert_eq!(lexer.next_token(), Token::RPAREN);
+        assert_eq!(lexer.next_token(), Token::Lparen);
+        assert_eq!(lexer.next_token(), Token::Plus);
+        assert_eq!(lexer.next_token(), Token::Literal(String::from("A")));
+        assert_eq!(lexer.next_token(), Token::Number(2.0));
+        assert_eq!(lexer.next_token(), Token::Literal(String::from("A")));
+        assert_eq!(lexer.next_token(), Token::Rparen);
     }
 
     #[test]
     fn read_number() {
         let tests = vec![
-            ("1", Token::NUMBER(1.0)),
-            ("1.5", Token::NUMBER(1.5)),
-            ("2.345", Token::NUMBER(2.345)),
+            ("1", Token::Number(1.0)),
+            ("1.5", Token::Number(1.5)),
+            ("2.345", Token::Number(2.345)),
         ];
         for test in tests {
             let mut lexer = Lexer::new(test.0.to_string());
@@ -177,36 +177,36 @@ mod test {
     #[test]
     fn basic_arithemetic() {
         let mut lexer = Lexer::new(String::from("(+ 1 2)"));
-        assert_eq!(lexer.next_token(), Token::LPAREN);
-        assert_eq!(lexer.next_token(), Token::PLUS);
-        assert_eq!(lexer.next_token(), Token::NUMBER(1.0));
-        assert_eq!(lexer.next_token(), Token::NUMBER(2.0));
-        assert_eq!(lexer.next_token(), Token::RPAREN);
-        assert_eq!(lexer.next_token(), Token::EOF);
+        assert_eq!(lexer.next_token(), Token::Lparen);
+        assert_eq!(lexer.next_token(), Token::Plus);
+        assert_eq!(lexer.next_token(), Token::Number(1.0));
+        assert_eq!(lexer.next_token(), Token::Number(2.0));
+        assert_eq!(lexer.next_token(), Token::Rparen);
+        assert_eq!(lexer.next_token(), Token::Eof);
     }
 
     #[test]
     fn nested_arithmetic() {
         let mut lexer = Lexer::new(String::from("(+ (- 30 2) (* (/ 4 2) 3))"));
         let wants = vec![
-            Token::LPAREN,
-            Token::PLUS,
-            Token::LPAREN,
-            Token::MINUS,
-            Token::NUMBER(30.0),
-            Token::NUMBER(2.0),
-            Token::RPAREN,
-            Token::LPAREN,
-            Token::ASTERISK,
-            Token::LPAREN,
-            Token::SLASH,
-            Token::NUMBER(4.0),
-            Token::NUMBER(2.0),
-            Token::RPAREN,
-            Token::NUMBER(3.0),
-            Token::RPAREN,
-            Token::RPAREN,
-            Token::EOF,
+            Token::Lparen,
+            Token::Plus,
+            Token::Lparen,
+            Token::Minus,
+            Token::Number(30.0),
+            Token::Number(2.0),
+            Token::Rparen,
+            Token::Lparen,
+            Token::Asterfisk,
+            Token::Lparen,
+            Token::Slash,
+            Token::Number(4.0),
+            Token::Number(2.0),
+            Token::Rparen,
+            Token::Number(3.0),
+            Token::Rparen,
+            Token::Rparen,
+            Token::Eof,
         ];
         for (i, want) in wants.iter().enumerate() {
             let token = lexer.next_token();

@@ -15,40 +15,18 @@ impl Parser {
         let token = self.lexer.next_token();
 
         match token {
-            Token::NUMBER(num) => {
-                return Ok(Expr::Number(num));
-            }
-            Token::STRING(s) => {
-                return Ok(Expr::String(s));
-            }
-            Token::LITERAL(symbol) => {
-                return Ok(Expr::Symbol(symbol));
-            }
-            Token::ASTERISK => {
-                return Ok(Expr::Symbol("*".to_string()));
-            }
-            Token::MINUS => {
-                return Ok(Expr::Symbol("-".to_string()));
-            }
-            Token::PLUS => {
-                return Ok(Expr::Symbol("+".to_string()));
-            }
-            Token::SLASH => {
-                return Ok(Expr::Symbol("/".to_string()));
-            }
-            Token::TRUE => {
-                return Ok(Expr::True);
-            }
-            Token::NIL => {
-                return Ok(Expr::Nil);
-            }
-            Token::ILLEGAL(token) => {
-                return Err(ExprErr::Cause(format!("invalid token: {}", token)));
-            }
-            Token::EOF | Token::RPAREN => {
-                return Ok(Expr::Nil);
-            }
-            Token::LPAREN => {
+            Token::Number(num) => Ok(Expr::Number(num)),
+            Token::String(s) => Ok(Expr::String(s)),
+            Token::Literal(symbol) => Ok(Expr::Symbol(symbol)),
+            Token::Asterfisk => Ok(Expr::Symbol("*".to_string())),
+            Token::Minus => Ok(Expr::Symbol("-".to_string())),
+            Token::Plus => Ok(Expr::Symbol("+".to_string())),
+            Token::Slash => Ok(Expr::Symbol("/".to_string())),
+            Token::True => Ok(Expr::True),
+            Token::Nil => Ok(Expr::Nil),
+            Token::Illegal(token) => Err(ExprErr::Cause(format!("invalid token: {}", token))),
+            Token::Eof | Token::Rparen => Ok(Expr::Nil),
+            Token::Lparen => {
                 let mut list = Vec::<Expr>::new();
                 loop {
                     match self.parse() {
